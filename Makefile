@@ -15,6 +15,13 @@ install:
 	sudo npm install -g pnpm cross-env webpack webpack-cli
 	# Start MySQL service
 	sudo systemctl start mysql
+	# Secure MySQL installation
+	@echo "Setting up MySQL root password..."
+	@echo "Please enter your desired MySQL root password:"
+	@read -s MYSQL_ROOT_PASS; \
+	sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$$MYSQL_ROOT_PASS';" || true; \
+	echo "export MYSQL_ROOT_PASS=$$MYSQL_ROOT_PASS" >> ~/.bashrc; \
+	source ~/.bashrc
 
 # Install project dependencies
 deps:
@@ -25,10 +32,14 @@ deps:
 # Setup MySQL database
 setup-db:
 	@echo "Setting up MySQL database..."
-	sudo mysql -e "CREATE DATABASE IF NOT EXISTS nocodb;"
-	sudo mysql -e "CREATE USER IF NOT EXISTS 'nocodb'@'localhost' IDENTIFIED BY 'nocodb';"
-	sudo mysql -e "GRANT ALL PRIVILEGES ON nocodb.* TO 'nocodb'@'localhost';"
-	sudo mysql -e "FLUSH PRIVILEGES;"
+	@if [ -z "$$MYSQL_ROOT_PASS" ]; then \
+		echo "Please enter MySQL root password:"; \
+		read -s MYSQL_ROOT_PASS; \
+	fi; \
+	mysql -u root -p"$$MYSQL_ROOT_PASS" -e "CREATE DATABASE IF NOT EXISTS nocodb;" && \
+	mysql -u root -p"$$MYSQL_ROOT_PASS" -e "CREATE USER IF NOT EXISTS 'nocodb'@'localhost' IDENTIFIED BY 'nocodb';" && \
+	mysql -u root -p"$$MYSQL_ROOT_PASS" -e "GRANT ALL PRIVILEGES ON nocodb.* TO 'nocodb'@'localhost';" && \
+	mysql -u root -p"$$MYSQL_ROOT_PASS" -e "FLUSH PRIVILEGES;"
 
 # Start the application
 start:
@@ -45,8 +56,12 @@ clean:
 	@echo "Cleaning up..."
 	rm -rf node_modules
 	rm -rf packages/*/node_modules
-	sudo mysql -e "DROP DATABASE IF EXISTS nocodb;"
-	sudo mysql -e "DROP USER IF EXISTS 'nocodb'@'localhost';"
+	@if [ -z "$$MYSQL_ROOT_PASS" ]; then \
+		echo "Please enter MySQL root password:"; \
+		read -s MYSQL_ROOT_PASS; \
+	fi; \
+	mysql -u root -p"$$MYSQL_ROOT_PASS" -e "DROP DATABASE IF EXISTS nocodb;" && \
+	mysql -u root -p"$$MYSQL_ROOT_PASS" -e "DROP USER IF EXISTS 'nocodb'@'localhost';"
 
 # Help target
 help:
