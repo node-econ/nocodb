@@ -12,7 +12,7 @@ install:
 	curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 	sudo apt-get install -y nodejs
 	# Install pnpm
-	sudo npm install -g pnpm cross-env webpack webpack-cli
+	sudo npm install -g pnpm cross-env
 
 # Install project dependencies
 deps:
@@ -23,12 +23,12 @@ deps:
 # Start the application
 start:
 	@echo "Starting NocoDB..."
-	# Start backend in background with webpack instead of rspack
-	NODE_ENV=development NC_DISABLE_TELE=true NODE_OPTIONS="--max-old-space-size=4096" cross-env ENTRYPOINT=src/run/docker webpack --config webpack.dev.config.js & \
+	# Start backend in background
+	cd packages/nocodb && NODE_ENV=development NC_DISABLE_TELE=true ENTRYPOINT=src/run/docker pnpm run watch:run & \
 	# Wait for backend to start
 	sleep 10 && \
 	# Start frontend and automatically answer no to telemetry
-	echo "no" | pnpm run start:frontend
+	cd packages/nc-gui && echo "no" | pnpm run dev
 
 # Clean installation
 clean:
