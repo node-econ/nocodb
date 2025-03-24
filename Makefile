@@ -12,7 +12,7 @@ install:
 	curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 	sudo apt-get install -y nodejs
 	# Install pnpm
-	sudo npm install -g pnpm cross-env
+	sudo npm install -g pnpm cross-env webpack webpack-cli
 	# Start MySQL service
 	sudo systemctl start mysql
 
@@ -33,8 +33,8 @@ setup-db:
 # Start the application
 start:
 	@echo "Starting NocoDB..."
-	# Start backend in background
-	NODE_ENV=development NC_DISABLE_TELE=true NC_DB=mysql2://nocodb:nocodb@localhost:3306/nocodb pnpm run start:backend & \
+	# Start backend in background with webpack instead of rspack
+	NODE_ENV=development NC_DISABLE_TELE=true NC_DB=mysql2://nocodb:nocodb@localhost:3306/nocodb NODE_OPTIONS="--max-old-space-size=4096" cross-env ENTRYPOINT=src/run/docker webpack --config webpack.dev.config.js & \
 	# Wait for backend to start
 	sleep 10 && \
 	# Start frontend and automatically answer no to telemetry
